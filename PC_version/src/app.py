@@ -1,88 +1,88 @@
-import random
+import threading
+import cv2
 import logging
 from emotion_detector import EmotionDetector
 from text_to_speech import TextToSpeech
 from gui import EmotionDetectionGUI
+from compliment_manager import ComplimentManager
 
 class EmotionDetectionApp:
-    """
-    The main application class which orchestrates the emotion detection, text-to-speech, and GUI.
-    """
     def __init__(self):
         """
-        Initialize the application components.
+        Initialize the Emotion Detection application.
+        Sets up emotion detection, text-to-speech engine, GUI, and compliments.
         """
         self.emotion_detector = EmotionDetector()  # Handles emotion detection
         self.text_to_speech = TextToSpeech()  # Handles text-to-speech
         self.gui = EmotionDetectionGUI()  # Handles the GUI
-
-        self.compliments = self._initialize_compliments()
-
-    def _initialize_compliments(self):
-        """
-        Initialize the compliments for different emotions.
-        """
-        return {
-            'happy': [
-                "Your smile lights up the room!",
-                "You bring so much joy to everyone around you!",
-                "Keep shining, you're amazing!",
-                "Your happiness is contagious, keep spreading it!"
-            ],
-            'neutral': [
-                "Your presence is calm and confident.",
-                "You handle things so gracefully.",
-                "You have a great sense of balance.",
-                "You give off such a peaceful vibe!"
-            ],
-            'sad': [
-                "You've got this, keep going! It’s okay to feel down, but better days are ahead.",
-                "It's tough right now, but you're stronger than you think.",
-                "Every step forward is progress, even if it's small.",
-                "I'm rooting for you, hang in there!"
-            ],
-            'angry': [
-                "Take a deep breath, everything will be alright.",
-                "Anger is just a moment, your peace is forever.",
-                "It's okay to feel angry, but don't let it control you.",
-                "You have the power to let go of the anger."
-            ],
-            'surprise': [
-                "You look wonderfully surprised today!",
-                "What an unexpected delight, you seem full of wonder!",
-                "Surprise suits you well!",
-                "You never fail to amaze with your reactions!"
-            ],
-            'fear': [
-                "Stay strong, you're doing great!",
-                "Fear is natural, but you can overcome it.",
-                "Courage doesn't mean you're not afraid, it means you move forward anyway.",
-                "Take a deep breath, you're braver than you think."
-            ]
-        }
+        self.compliment_manager = ComplimentManager()  # Handles compliments
 
     def process_frame(self, frame):
         """
         Process each frame from the webcam, detect emotion, and provide feedback.
-
-        :param frame: The frame captured from the webcam.
         """
         try:
             emotion = self.emotion_detector.detect_emotion(frame)
-            compliment = random.choice(self.compliments.get(emotion, ["You're amazing just the way you are!"]))
+            if emotion:
+                compliment = self.compliment_manager.get_compliment(emotion)
 
-            self.gui.update_labels(emotion, compliment)
-            self.text_to_speech.speak(compliment)
+                # Update the GUI and speak the compliment
+                self.gui.update_labels(emotion, compliment)
+                self.text_to_speech.speak(compliment)
+
+                # Display emotion and compliment on the frame
+                cv2.putText(frame, f'Emotion: {emotion}', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                cv2.putText(frame, f'Compliment: {compliment}', (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                cv2.imshow("Emotion Detection", frame)
 
         except Exception as e:
             logging.error(f"Error processing frame: {e}")
 
-    def start(self, webcam_capture_func):
+    def capture_webcam(self):
         """
-        Start the emotion detection process with webcam capture.
+        Capture frames from the webcam and process them for emotion detection.
+        """
+        try:
+            cap = cv2.VideoCapture(0)
+            if not cap.isOpened():
+                logging.error("Error: Could not open webcam.")
+                return
+            logging.info("Webcam capture started successfully.")
 
-        :param webcam_capture_func: The function to capture webcam frames.
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    logging.warning("Failed to grab frame")
+                    break
+
+                # Process the frame
+                self.process_frame(frame)
+
+                # Exit the loop when 'q' is pressed
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    logging.info("Exiting webcam capture.")
+                    break
+
+            cap.release()
+            cv2.destroyAllWindows()
+
+        except Exception as e:
+            logging.error(f"Error capturing webcam frame: {e}")
+
+    def start(self):
         """
-        webcam_capture_func(self.process_frame)
+        Start the application in a separate thread for webcam capture and Tkinter GUI.
+        """
+        # Start webcam capture in a separate thread
+        webcam_thread = threading.Thread(target=self.capture_webcam)
+        webcam_thread.daemon = True  # Daemonize the thread so it exits with the main application
+        webcam_thread.start()
+
+        # Start the Tkinter GUI main loop
         self.gui.start()
 
+
+# Run the application if this script is executed
+if __name__ == "__main__":
+    app = EmotionDetectionApp()
+    app.start()
