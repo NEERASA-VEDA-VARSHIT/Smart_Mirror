@@ -42,4 +42,3 @@ class EmotionDetectionGUI:
         Start the Tkinter main event loop.
         """
         self.window.mainloop()
-
