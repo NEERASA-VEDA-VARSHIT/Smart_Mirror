@@ -25,4 +25,3 @@ class TextToSpeech:
             self.engine.runAndWait()
         except Exception as e:
             logging.error(f"Error generating audio: {e}")
-
