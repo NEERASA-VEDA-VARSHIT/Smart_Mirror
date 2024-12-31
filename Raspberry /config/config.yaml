@@ -1,0 +1,15 @@
+emotion_detector:
+  model: "MTCNN"
+
+text_to_speech:
+  rate: 150
+  volume: 1
+
+compliments:
+  happy:
+    - "Your smile lights up the room!"
+    - "You bring so much joy to everyone around you!"
+  neutral:
+    - "Your presence is calm and confident."
+  sad:
+    - "You've got this, keep going!"
