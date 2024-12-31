@@ -1,8 +1,9 @@
 from fer import FER
+import logging
 
 class EmotionDetector:
     """
-    Class responsible for detecting emotions from a given image frame.
+    Class responsible for detecting emotions from an image frame.
     """
     def __init__(self):
         """
@@ -17,6 +18,10 @@ class EmotionDetector:
         :param frame: The frame captured from the webcam.
         :return: The detected emotion.
         """
-        emotion, _ = self.emotion_detector.top_emotion(frame)
-        return emotion
-
+        try:
+            emotion, _ = self.emotion_detector.top_emotion(frame)
+            logging.info(f"Detected emotion: {emotion}")
+            return emotion
+        except Exception as e:
+            logging.error(f"Error detecting emotion: {e}")
+            return None
